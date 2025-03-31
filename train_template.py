@@ -72,10 +72,10 @@ def main():
     # 基础模型位置
     model_name = "model/Qwen2-1.5B-Instruct"
     # 训练集
-    train_json_path = "./data/train.json"
+    train_json_path = "./data/train_template.json"
     # 验证集
-    val_json_path = "./data/val.json"
-    max_source_length = 128
+    val_json_path = "./data/val_template.json"
+    max_source_length = 64
     max_target_length = 256
     epochs = 3
     batch_size = 1
