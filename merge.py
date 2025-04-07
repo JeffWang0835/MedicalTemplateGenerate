@@ -30,7 +30,7 @@ print("开始合并模型...")
 model = model.merge_and_unload()
 
 # 保存合并后的模型
-print(f"保存合并后的模型到 {model_config.get_lora_dir()}")
-model.save_pretrained(model_config.get_lora_dir())
-tokenizer.save_pretrained(model_config.get_lora_dir())
+print(f"保存合并后的模型到 {model_config.get_lora_output()}")
+model.save_pretrained(model_config.get_lora_output())
+tokenizer.save_pretrained(model_config.get_lora_output())
 print("模型合并完成！")
