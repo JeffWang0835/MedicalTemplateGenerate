@@ -12,7 +12,10 @@ import os, time, sys
 from config import model_config, training_config, lora_config
 
 # 初始化tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
+tokenizer = AutoTokenizer.from_pretrained(
+    model_config.get_model_path(), 
+    trust_remote_code=model_config.trust_remote_code
+)
 
 def custom_collate_fn(batch):
     """
@@ -96,7 +99,10 @@ def main():
     device = torch.device(model_config.device if torch.cuda.is_available() else "cpu")
     
     # 加载模型
-    model = AutoModelForCausalLM.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_config.get_model_path(), 
+        trust_remote_code=model_config.trust_remote_code
+    )
     
     # 设置LoRA配置
     peft_config = LoraConfig(
@@ -159,7 +165,7 @@ def main():
         gradient_accumulation_steps=training_config.gradient_accumulation_steps,
         device=device,
         num_epochs=training_config.epochs,
-        model_output_dir=model_config.lora_dir,
+        model_output_dir=model_config.get_lora_dir(),
         writer=writer
     )
     writer.close()

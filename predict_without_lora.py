@@ -9,11 +9,11 @@ device = torch.device(model_config.device if torch.cuda.is_available() else "cpu
 
 # 加载模型和tokenizer
 model = AutoModelForCausalLM.from_pretrained(
-    model_config.model_name, 
+    model_config.get_model_path(),
     trust_remote_code=model_config.trust_remote_code
 ).to(device)
 tokenizer = AutoTokenizer.from_pretrained(
-    model_config.model_name, 
+    model_config.get_model_path(), 
     trust_remote_code=model_config.trust_remote_code
 )
 

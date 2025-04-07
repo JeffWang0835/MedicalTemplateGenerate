@@ -9,9 +9,15 @@ from config import model_config, system_prompt, generation_config
 device = torch.device(model_config.device if torch.cuda.is_available() else "cpu")
 
 # 加载模型和tokenizer
-model = AutoModelForCausalLM.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
-tokenizer = AutoTokenizer.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
-model = PeftModel.from_pretrained(model, model_config.lora_dir)
+model = AutoModelForCausalLM.from_pretrained(
+    model_config.get_model_path(), 
+    trust_remote_code=model_config.trust_remote_code
+)
+tokenizer = AutoTokenizer.from_pretrained(
+    model_config.get_model_path(), 
+    trust_remote_code=model_config.trust_remote_code
+)
+model = PeftModel.from_pretrained(model, model_config.get_lora_dir())
 model.to(device)
 
 # Prompt 数组

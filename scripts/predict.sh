@@ -1,1 +1,1 @@
-python ../predict_template.py
+python predict_template.py

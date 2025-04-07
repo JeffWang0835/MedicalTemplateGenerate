@@ -1,13 +1,33 @@
 from dataclasses import dataclass
 from typing import List
+import os
+
+def get_project_root():
+    """获取项目根目录"""
+    return os.path.dirname(os.path.abspath(__file__))
+
+def get_absolute_path(relative_path):
+    """将相对路径转换为绝对路径"""
+    return os.path.join(get_project_root(), relative_path)
 
 @dataclass
 class ModelConfig:
     """模型相关配置"""
     model_name: str = "model/Qwen2.5-7B-Instruct"
     lora_dir: str = "output"
+    lora_output: str = "lora_output"
     device: str = "cuda:0"  # 或 "cpu"
     trust_remote_code: bool = True
+
+    def get_model_path(self):
+        """获取模型的绝对路径"""
+        return get_absolute_path(self.model_name)
+
+    def get_lora_dir(self):
+        """获取LoRA目录的绝对路径"""
+        return get_absolute_path(self.lora_dir)
+    def get_lora_output(self):
+        return get_absolute_path(self.lora_output)
 
 @dataclass
 class TrainingConfig:

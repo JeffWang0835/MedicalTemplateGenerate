@@ -9,11 +9,11 @@ device = torch.device(model_config.device if torch.cuda.is_available() else "cpu
 
 # 加载合并后的模型和tokenizer
 model = AutoModelForCausalLM.from_pretrained(
-    "lora_output",  # 使用合并后的模型路径
+    model_config.get_lora_output(),
     trust_remote_code=model_config.trust_remote_code
 ).to(device)
 tokenizer = AutoTokenizer.from_pretrained(
-    "lora_output",  # 使用合并后的模型路径
+    model_config.get_lora_output(),
     trust_remote_code=model_config.trust_remote_code
 )
 
