@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(ROOT_DIR)
 import transformers
 import torch
 from peft import PeftModel

@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
+
+# 获取项目根目录路径
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+# 将项目根目录添加到Python路径
+sys.path.append(ROOT_DIR)
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 import torch

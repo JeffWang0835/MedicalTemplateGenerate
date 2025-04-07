@@ -10,6 +10,11 @@ from tqdm import tqdm
 from torch.nn.utils.rnn import pad_sequence
 import os, time, sys
 from config import model_config, training_config, lora_config
+import os
+import sys
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(ROOT_DIR)
 
 # 初始化tokenizer
 tokenizer = AutoTokenizer.from_pretrained(
