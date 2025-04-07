@@ -1,32 +1,26 @@
 # -*- coding: utf-8 -*-
+import time
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from peft import PeftModel
+from config import model_config
 
-model_path = "lora_output"
+# 设备设置
+device = torch.device(model_config.device if torch.cuda.is_available() else "cpu")
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-model = AutoModelForCausalLM.from_pretrained(model_path)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model.to(device)
-
-prompt = """
-5月至今上腹靠右隐痛，右背隐痛带酸，便秘，喜睡，时有腹痛，头痛，腰酸症状？
-"""
-messages = [
-    {"role": "system", "content": "你是一个医疗方面的专家，可以根据患者的问题进行解答。"},
-    {"role": "user", "content": prompt}
-]
-text = tokenizer.apply_chat_template(
-    messages,
-    tokenize=False,
-    add_generation_prompt=True
+# 加载模型和tokenizer
+tokenizer = AutoTokenizer.from_pretrained(
+    model_config.model_name, 
+    trust_remote_code=model_config.trust_remote_code
 )
-print(text)
-model_inputs = tokenizer([text], return_tensors="pt").to(device)
-generated_ids = model.generate(model_inputs.input_ids, max_new_tokens=258)
-generated_ids = [
-    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-]
-response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-print(response)
+model = AutoModelForCausalLM.from_pretrained(
+    model_config.model_name, 
+    trust_remote_code=model_config.trust_remote_code
+)
+model = PeftModel.from_pretrained(model, model_config.lora_dir).to(device)
+print(model)
 
+# 合并model, 同时保存 token
+model = model.merge_and_unload()
+model.save_pretrained("lora_output")
+tokenizer.save_pretrained("lora_output")

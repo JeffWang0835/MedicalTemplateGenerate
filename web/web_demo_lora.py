@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 import gradio as gr
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
 import torch
 from config import model_config, system_prompt, generation_config
 
 # 设备设置
 device = torch.device(model_config.device if torch.cuda.is_available() else "cpu")
 
-# 加载合并后的模型和tokenizer
-model = AutoModelForCausalLM.from_pretrained(
-    "lora_output",  # 使用合并后的模型路径
+# 加载模型和tokenizer
+model_base = AutoModelForCausalLM.from_pretrained(
+    model_config.model_name, 
     trust_remote_code=model_config.trust_remote_code
 ).to(device)
 tokenizer = AutoTokenizer.from_pretrained(
-    "lora_output",  # 使用合并后的模型路径
+    model_config.model_name, 
     trust_remote_code=model_config.trust_remote_code
 )
+model = PeftModel.from_pretrained(model_base, model_config.lora_dir).to(device)
 
 
 def generate_history(chief_complaint):
