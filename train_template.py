@@ -7,8 +7,30 @@ from peft import LoraConfig, get_peft_model, TaskType
 import pandas as pd
 from template_dataset import TemplateDataset
 from tqdm import tqdm
+from torch.nn.utils.rnn import pad_sequence
 import os, time, sys
 
+model_name = "model/Qwen2-1.5B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+
+def custom_collate_fn(batch):
+    """
+    自定义 collate_fn，用于处理变长序列数据。
+    """
+    input_ids = [item['input_ids'] for item in batch]
+    attention_mask = [item['attention_mask'] for item in batch]
+    labels = [item['labels'] for item in batch]
+
+    # 填充到批次内的最大长度
+    input_ids = pad_sequence(input_ids, batch_first=True, padding_value=tokenizer.pad_token_id)
+    attention_mask = pad_sequence(attention_mask, batch_first=True, padding_value=0)
+    labels = pad_sequence(labels, batch_first=True, padding_value=-100)  # -100 是忽略索引
+
+    return {
+        'input_ids': input_ids,
+        'attention_mask': attention_mask,
+        'labels': labels
+    }
 
 def train_model(model, train_loader, val_loader, optimizer, gradient_accumulation_steps,
                 device, num_epochs, model_output_dir, writer):
@@ -77,7 +99,7 @@ def main():
     val_json_path = "./data/val_template.json"
     max_source_length = 64
     max_target_length = 256
-    epochs = 3
+    epochs = 10
     batch_size = 1
     lr = 1e-4
     gradient_accumulation_steps = 16
@@ -88,7 +110,7 @@ def main():
     # 设备
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # 加载分词器和模型
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+
     model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
     # setup peft
     peft_config = LoraConfig(
@@ -110,7 +132,7 @@ def main():
         "num_workers": 0,
     }
     training_set = TemplateDataset(train_json_path, tokenizer, max_source_length, max_target_length)
-    training_loader = DataLoader(training_set, **train_params)
+    training_loader = DataLoader(training_set, collate_fn=custom_collate_fn, **train_params)
     print("Start Load Validation Data...")
     val_params = {
         "batch_size": batch_size,
@@ -118,7 +140,7 @@ def main():
         "num_workers": 0,
     }
     val_set = TemplateDataset(val_json_path, tokenizer, max_source_length, max_target_length)
-    val_loader = DataLoader(val_set, **val_params)
+    val_loader = DataLoader(val_set, collate_fn=custom_collate_fn, **val_params)
     # 日志记录
     writer = SummaryWriter(logs_dir)
     # 优化器

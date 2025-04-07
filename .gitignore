@@ -1,0 +1,31 @@
+# 忽略构建产物目录
+/build/
+/dist/
+
+# 忽略日志文件
+*.log
+
+# 忽略操作系统特定的文件
+.DS_Store
+Thumbs.db
+
+# 忽略临时文件
+*.tmp
+*.swp
+
+# 忽略IDE配置文件
+/.idea/
+/.vscode/
+*.iml
+
+# 忽略node_modules目录（对于Node.js项目）
+/node_modules/
+
+# 忽略package-lock.json文件（对于Node.js项目）
+package-lock.json
+
+/model/
+/logs/
+/output/
+/data/Chinese-medical-dialogue-data/
+/__pycache__/
