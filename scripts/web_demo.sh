@@ -7,4 +7,4 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR/.."
 
 # 执行web_demo.py
-python web/web_demo.py
+python web/web_demo.py --use_lora=True
