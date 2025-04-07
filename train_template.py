@@ -9,9 +9,10 @@ from template_dataset import TemplateDataset
 from tqdm import tqdm
 from torch.nn.utils.rnn import pad_sequence
 import os, time, sys
+from config import model_config, training_config, lora_config
 
-model_name = "model/Qwen2-1.5B-Instruct"
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+# 初始化tokenizer
+tokenizer = AutoTokenizer.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
 
 def custom_collate_fn(batch):
     """
@@ -91,61 +92,63 @@ def validate_model(model, val_loader, device):
 
 
 def main():
-    # 基础模型位置
-    model_name = "model/Qwen2-1.5B-Instruct"
-    # 训练集
-    train_json_path = "./data/train_template.json"
-    # 验证集
-    val_json_path = "./data/val_template.json"
-    max_source_length = 64
-    max_target_length = 256
-    epochs = 10
-    batch_size = 1
-    lr = 1e-4
-    gradient_accumulation_steps = 16
-    lora_rank = 8
-    lora_alpha = 32
-    model_output_dir = "output"
-    logs_dir = "logs"
     # 设备
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # 加载分词器和模型
-
-    model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-    # setup peft
+    device = torch.device(model_config.device if torch.cuda.is_available() else "cpu")
+    
+    # 加载模型
+    model = AutoModelForCausalLM.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
+    
+    # 设置LoRA配置
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        target_modules=lora_config.target_modules,
         inference_mode=False,
-        r=lora_rank,
-        lora_alpha=lora_alpha,
-        lora_dropout=0.1
+        r=lora_config.lora_rank,
+        lora_alpha=lora_config.lora_alpha,
+        lora_dropout=lora_config.lora_dropout
     )
     model = get_peft_model(model, peft_config)
     model.is_parallelizable = True
     model.model_parallel = True
     model.print_trainable_parameters()
+
+    # 加载训练数据
     print("Start Load Train Data...")
     train_params = {
-        "batch_size": batch_size,
+        "batch_size": training_config.batch_size,
         "shuffle": True,
-        "num_workers": 0,
+        "num_workers": training_config.num_workers,
     }
-    training_set = TemplateDataset(train_json_path, tokenizer, max_source_length, max_target_length)
+    training_set = TemplateDataset(
+        training_config.train_json_path, 
+        tokenizer, 
+        training_config.max_source_length, 
+        training_config.max_target_length
+    )
     training_loader = DataLoader(training_set, collate_fn=custom_collate_fn, **train_params)
+
+    # 加载验证数据
     print("Start Load Validation Data...")
     val_params = {
-        "batch_size": batch_size,
+        "batch_size": training_config.batch_size,
         "shuffle": False,
-        "num_workers": 0,
+        "num_workers": training_config.num_workers,
     }
-    val_set = TemplateDataset(val_json_path, tokenizer, max_source_length, max_target_length)
+    val_set = TemplateDataset(
+        training_config.val_json_path, 
+        tokenizer, 
+        training_config.max_source_length, 
+        training_config.max_target_length
+    )
     val_loader = DataLoader(val_set, collate_fn=custom_collate_fn, **val_params)
+
     # 日志记录
-    writer = SummaryWriter(logs_dir)
+    writer = SummaryWriter("logs")
+    
     # 优化器
-    optimizer = torch.optim.AdamW(params=model.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(params=model.parameters(), lr=training_config.learning_rate)
     model = model.to(device)
+
     # 开始训练
     print("Start Training...")
     train_model(
@@ -153,10 +156,10 @@ def main():
         train_loader=training_loader,
         val_loader=val_loader,
         optimizer=optimizer,
-        gradient_accumulation_steps=gradient_accumulation_steps,
+        gradient_accumulation_steps=training_config.gradient_accumulation_steps,
         device=device,
-        num_epochs=epochs,
-        model_output_dir=model_output_dir,
+        num_epochs=training_config.epochs,
+        model_output_dir=model_config.lora_dir,
         writer=writer
     )
     writer.close()

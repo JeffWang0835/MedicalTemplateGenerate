@@ -3,29 +3,16 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 import torch
 import time
-
-# 模型路径和LoRA目录
-model_path = "model/Qwen2.5-7B-Instruct"
-lora_dir = "output"
+from config import model_config, system_prompt, generation_config
 
 # 设备设置
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-model = AutoModelForCausalLM.from_pretrained(model_path)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = PeftModel.from_pretrained(model, lora_dir)
-model.to(device)
+device = torch.device(model_config.device if torch.cuda.is_available() else "cpu")
 
-# 系统提示内容
-systemContent = """
-你是一个医疗方面的专家，根据医生提供的主诉和科室信息生成患者的现病史。科室信息：儿科
-示例输入：
-    发热3天
-示例输出：
-    3天前发热，最高体温t℃，无寒战、抽搐，偶咳嗽，可闻及痰响，伴鼻阻、流涕，无发热，无呕吐，腹泻，无皮疹，无结膜充血，精神可。
-请按照我的回答实例回答，不要出现多余的澄清性文字，不要使用示例输入的结果。
-请像上面的示例一样回答出该例子对应的输出，输出的时候，只返回给我现病史文本，不准输出你的中间思考过程，直接输出现病史，如果你中间写了思考步骤，我的程序会报错。不要出现这种的说明文本，直接给我主诉对应的现病史
-约束：在现病史中，应该是时间+主诉症状描述，时间描述应自然融入，使用如“X天前”，“h小时前”等表达方式，避免生硬的时间顺序
-"""
+# 加载模型和tokenizer
+model = AutoModelForCausalLM.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
+tokenizer = AutoTokenizer.from_pretrained(model_config.model_name, trust_remote_code=model_config.trust_remote_code)
+model = PeftModel.from_pretrained(model, model_config.lora_dir)
+model.to(device)
 
 # Prompt 数组
 prompts = [
@@ -42,7 +29,7 @@ for i, prompt in enumerate(prompts):
     start_time = time.time()  # 开始计时
 
     messages = [
-        {"role": "system", "content": systemContent},
+        {"role": "system", "content": system_prompt.content},
         {"role": "user", "content": prompt}
     ]
 
@@ -53,7 +40,13 @@ for i, prompt in enumerate(prompts):
     )
 
     model_inputs = tokenizer([text], return_tensors="pt").to(device)
-    generated_ids = model.generate(model_inputs.input_ids, max_new_tokens=258)
+    generated_ids = model.generate(
+        model_inputs.input_ids,
+        max_new_tokens=generation_config.max_new_tokens,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        repetition_penalty=generation_config.repetition_penalty
+    )
     generated_ids = [
         output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
     ]
