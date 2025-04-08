@@ -56,6 +56,9 @@ history_records = []
 
 
 def generate_history(chief_complaint, history_state, temperature, top_p):
+    # 记录开始时间
+    start_time = datetime.now()
+
     # 生成现病史
     messages = [
         {"role": "system", "content": system_prompt.content},
@@ -82,12 +85,17 @@ def generate_history(chief_complaint, history_state, temperature, top_p):
     response = tokenizer.decode(output[0][len(inputs.input_ids[0]):],
                                 skip_special_tokens=True)
 
+    # 计算耗时
+    end_time = datetime.now()
+    elapsed_time = (end_time - start_time).total_seconds()
+
     # 更新历史记录
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     new_entry = {
         "timestamp": timestamp,
         "chief_complaint": chief_complaint,
-        "history": response
+        "history": response,
+        "elapsed_time": f"{elapsed_time:.2f}秒"
     }
 
     # 优先使用state存储，防止多用户并发问题
@@ -95,10 +103,6 @@ def generate_history(chief_complaint, history_state, temperature, top_p):
 
     # 同时维护全局列表（可选持久化）
     history_records.append(new_entry)
-
-    # 保存到文件（可选）
-    # with open("history.json", "w") as f:
-    #     json.dump(history_records, f, indent=2, ensure_ascii=False)
 
     # 返回两个值：格式化后的HTML展示 + 状态存储
     return format_history(updated_history), updated_history
@@ -146,6 +150,7 @@ def format_history(history):
             <div><strong>时间：</strong>{entry['timestamp']}</div>
             <div><strong>主诉：</strong>{entry['chief_complaint']}</div>
             <div><strong>现病史：</strong>{entry['history']}</div>
+            <div><strong>耗时：</strong>{entry['elapsed_time']}</div>
         </li>
         """
     html += "</ul>"
@@ -158,7 +163,7 @@ with open(css_file_path, "r", encoding="utf-8") as f:
     css_content = f.read()
 
 # 创建Gradio界面
-with gr.Blocks(css=css_content, theme=gr.themes.Soft()) as demo:
+with gr.Blocks(css=css_content, theme=gr.themes.Base()) as demo:
     with gr.Column(elem_classes="container"):
         with gr.Column(elem_classes="header"):
             gr.Markdown("# 现病史生成系统")

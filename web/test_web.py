@@ -52,12 +52,16 @@ def generate_history(chief_complaint, history_state, temperature, top_p):
 
     # 生成时间戳
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 模拟耗时（测试模式下固定为0.5秒）
+    elapsed_time = 0.5
 
     # 创建新条目
     new_entry = {
         "timestamp": timestamp,
         "chief_complaint": chief_complaint,
-        "history": fixed_response
+        "history": fixed_response,
+        "elapsed_time": f"{elapsed_time:.2f}秒"
     }
 
     # 更新历史记录
@@ -105,6 +109,7 @@ def format_history(history):
             <div><strong>时间：</strong>{entry['timestamp']}</div>
             <div><strong>主诉：</strong>{entry['chief_complaint']}</div>
             <div><strong>现病史：</strong>{entry['history']}</div>
+            <div><strong>耗时：</strong>{entry['elapsed_time']}</div>
         </li>
         """
     html += "</ul>"
@@ -116,13 +121,13 @@ css_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "styles
 with open(css_file_path, "r", encoding="utf-8") as f:
     css_content = f.read()
 
-# Gradio界面保持不变
-with gr.Blocks(css=css_content, theme=gr.themes.Soft()) as demo:
+# 创建Gradio界面
+with gr.Blocks(css=css_content, theme=gr.themes.Base()) as demo:
     with gr.Column(elem_classes="container"):
         with gr.Column(elem_classes="header"):
-            gr.Markdown("# 现病史生成系统（演示模式）")
-            gr.Markdown("输入患者的主诉，自动生成符合规范的现病史（当前为静态演示数据）")
-
+            gr.Markdown("# 现病史生成测试系统")
+            gr.Markdown("测试现病史生成系统的各项功能")
+            
         # 输入框
         with gr.Column(elem_classes="card"):
             with gr.Row():
