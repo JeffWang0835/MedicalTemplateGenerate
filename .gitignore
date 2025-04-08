@@ -29,3 +29,4 @@ package-lock.json
 /output/
 /data/Chinese-medical-dialogue-data/
 /__pycache__/
+/web/.gradio/
