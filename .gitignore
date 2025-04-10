@@ -30,3 +30,6 @@ package-lock.json
 /data/Chinese-medical-dialogue-data/
 /__pycache__/
 /web/.gradio/
+
+#忽略导出
+/exports/
