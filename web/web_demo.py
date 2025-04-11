@@ -19,13 +19,44 @@ from config import model_config, system_prompt, generation_config
 parser = argparse.ArgumentParser(description='启动现病史生成系统')
 parser.add_argument('--use_lora', action='store_true', default=True,
                     help='是否使用LoRA权重，默认为True')
+parser.add_argument('--use_vllm', action='store_true', default=False,
+                    help='是否使用vllm加速，默认为False')
 args = parser.parse_args()
 
-# 设备设置
+# vllm
+if args.use_vllm or model_config.use_vllm:
+    try:
+        from vllm import LLM, SamplingParams
+        print("使用vllm加速模型推理")
+        use_vllm = True
+    except ImportError:
+        print("未安装vllm，将使用标准推理方式")
+        use_vllm = False
+else:
+    use_vllm = False
+
 device = torch.device(model_config.device if torch.cuda.is_available() else "cpu")
 
 # 根据参数决定加载模型的方式
-if args.use_lora:
+if use_vllm:
+    # 使用vllm加载模型
+    model = LLM(
+        model=model_config.get_model_path(),
+        tensor_parallel_size=model_config.vllm_tensor_parallel_size,
+        trust_remote_code=model_config.vllm_trust_remote_code,
+        max_num_batched_tokens=model_config.vllm_max_num_batched_tokens,
+        max_num_seqs=model_config.vllm_max_num_seqs,
+        max_paddings=model_config.vllm_max_paddings,
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_config.get_model_path(),
+        trust_remote_code=model_config.trust_remote_code
+    )
+
+    if args.use_lora and os.path.exists(model_config.get_lora_dir()):
+        print("警告：vllm模式下不支持直接加载LoRA权重，请先合并LoRA权重到基础模型")
+elif args.use_lora:
     # 加载基础模型
     model_base = AutoModelForCausalLM.from_pretrained(
         model_config.get_model_path(),
@@ -71,19 +102,31 @@ def generate_history(chief_complaint, history_state, temperature, top_p):
         add_generation_prompt=True
     )
 
-    inputs = tokenizer([text], return_tensors="pt").to(device)
-    with torch.no_grad():
-        output = model.generate(
-            inputs.input_ids,
-            max_new_tokens=generation_config.max_new_tokens,
+    if use_vllm:
+        # 使用vllm生成
+        sampling_params = SamplingParams(
             temperature=temperature,
             top_p=top_p,
-            repetition_penalty=generation_config.repetition_penalty,
-            do_sample=True
+            max_tokens=generation_config.max_new_tokens,
+            repetition_penalty=generation_config.repetition_penalty
         )
+        outputs = model.generate([text], sampling_params)
+        response = outputs[0].outputs[0].text
+    else:
+        # 标准方式生成
+        inputs = tokenizer([text], return_tensors="pt").to(device)
+        with torch.no_grad():
+            output = model.generate(
+                inputs.input_ids,
+                max_new_tokens=generation_config.max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                repetition_penalty=generation_config.repetition_penalty,
+                do_sample=True
+            )
 
-    response = tokenizer.decode(output[0][len(inputs.input_ids[0]):],
-                                skip_special_tokens=True)
+        response = tokenizer.decode(output[0][len(inputs.input_ids[0]):],
+                                    skip_special_tokens=True)
 
     # 计算耗时
     end_time = datetime.now()
