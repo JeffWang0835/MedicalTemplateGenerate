@@ -76,11 +76,18 @@ def generate_template(model, tokenizer, chief_complaint, department):
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
     
     # 提取助手回复部分
-    assistant_start = generated_text.find("ASSISTANT: ")
+    assistant_start = generated_text.find("assistant")
     if assistant_start != -1:
-        generated_text = generated_text[assistant_start + len("ASSISTANT: "):]
+        # 找到assistant标记后的第一个换行符
+        newline_pos = generated_text.find("\n", assistant_start)
+        if newline_pos != -1:
+            generated_text = generated_text[newline_pos:].strip()
     
-    return generated_text.strip()
+    # 清理输出文本
+    generated_text = generated_text.replace("<|im_end|>", "").replace("<|endoftext|>", "")
+    generated_text = generated_text.strip()
+    
+    return generated_text
 
 def compute_metrics(predictions, references):
     # 计算BLEU分数
@@ -138,6 +145,14 @@ def evaluate():
         generated_template = generate_template(base_model, tokenizer, chief_complaint, department)
         base_predictions.append(generated_template)
         references.append(template)
+        
+        # 打印第一个样本的输入输出，用于调试
+        if len(base_predictions) == 1:
+            print("\n第一个样本的输入输出示例:")
+            print(f"主诉: {chief_complaint}")
+            print(f"科室: {department}")
+            print(f"参考模板: {template}")
+            print(f"生成模板: {generated_template}")
     
     base_metrics = compute_metrics(base_predictions, references)
     results["base_model"] = base_metrics
@@ -158,6 +173,14 @@ def evaluate():
         
         generated_template = generate_template(tuned_model, tokenizer, chief_complaint, department)
         tuned_predictions.append(generated_template)
+        
+        # 打印第一个样本的输入输出，用于调试
+        if len(tuned_predictions) == 1:
+            print("\n第一个样本的输入输出示例:")
+            print(f"主诉: {chief_complaint}")
+            print(f"科室: {department}")
+            print(f"参考模板: {references[0]}")
+            print(f"生成模板: {generated_template}")
     
     tuned_metrics = compute_metrics(tuned_predictions, references)
     results["tuned_model"] = tuned_metrics

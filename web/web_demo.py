@@ -41,12 +41,11 @@ device = torch.device(model_config.device if torch.cuda.is_available() else "cpu
 if use_vllm:
     # 使用vllm加载模型
     model = LLM(
-        model=model_config.get_model_path(),
+        model=model_config.get_lora_output(),
         tensor_parallel_size=model_config.vllm_tensor_parallel_size,
         trust_remote_code=model_config.vllm_trust_remote_code,
         max_num_batched_tokens=model_config.vllm_max_num_batched_tokens,
         max_num_seqs=model_config.vllm_max_num_seqs,
-        max_paddings=model_config.vllm_max_paddings,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(

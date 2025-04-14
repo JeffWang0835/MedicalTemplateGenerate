@@ -20,9 +20,8 @@ class ModelConfig:
     trust_remote_code: bool = True
     use_vllm: bool = False  # 是否使用vllm加速
     vllm_tensor_parallel_size: int = 1  # vllm张量并行大小
-    vllm_max_num_batched_tokens: int = 4096  # vllm最大批处理token数
+    vllm_max_num_batched_tokens: int = 32768  # vllm最大批处理token数
     vllm_max_num_seqs: int = 256  # vllm最大序列数
-    vllm_max_paddings: int = 64  # vllm最大填充数
     vllm_trust_remote_code: bool = True  # vllm是否信任远程代码
 
     def get_model_path(self):
