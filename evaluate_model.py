@@ -46,7 +46,7 @@ def load_model_and_tokenizer(use_lora=False):
 def generate_template(model, tokenizer, chief_complaint, department):
     # 构建输入提示
     messages = [
-        {"role": "system", "content": f"科室：{department}" + system_prompt.content},
+        {"role": "system", "content": system_prompt.content + (f"\n科室：{department}" if department else "")},
         {"role": "user", "content": chief_complaint}
     ]
     prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)

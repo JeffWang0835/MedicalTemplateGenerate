@@ -69,12 +69,24 @@ prompts = [
     "骨折1周，韧带撕裂"
 ]
 
+# 对应的科室信息
+departments = [
+    "儿科",
+    "内科",
+    "消化内科",
+    "耳鼻喉科",
+    "皮肤科",
+    "骨科"
+]
+
 # 批量调用并计算时间
 for i, prompt in enumerate(prompts):
     start_time = time.time()  # 开始计时
+    
+    department = departments[i] if i < len(departments) else ""
 
     messages = [
-        {"role": "system", "content": system_prompt.content},
+        {"role": "system", "content": system_prompt.content + (f"\n科室：{department}" if department else "")},
         {"role": "user", "content": prompt}
     ]
 
@@ -115,5 +127,6 @@ for i, prompt in enumerate(prompts):
     # 输出结果
     print(f"=== Prompt {i + 1} ===")
     print("主诉：" + prompt)
+    print("科室：" + department)
     print("现病史：" + response)
     print(f"耗时：{elapsed_time:.4f} 秒\n")

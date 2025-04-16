@@ -85,13 +85,13 @@ else:
 history_records = []
 
 
-def generate_history(chief_complaint, history_state, temperature, top_p):
+def generate_history(chief_complaint, history_state, temperature, top_p, department=""):
     # 记录开始时间
     start_time = datetime.now()
 
     # 生成现病史
     messages = [
-        {"role": "system", "content": system_prompt.content},
+        {"role": "system", "content": system_prompt.content + (f"\n科室：{department}" if department else "")},
         {"role": "user", "content": chief_complaint}
     ]
 
@@ -136,6 +136,7 @@ def generate_history(chief_complaint, history_state, temperature, top_p):
     new_entry = {
         "timestamp": timestamp,
         "chief_complaint": chief_complaint,
+        "department": department,
         "history": response,
         "elapsed_time": f"{elapsed_time:.2f}秒"
     }
@@ -191,6 +192,7 @@ def format_history(history):
         <li style='margin-bottom: 15px; border-bottom: 1px solid #eee'>
             <div><strong>时间：</strong>{entry['timestamp']}</div>
             <div><strong>主诉：</strong>{entry['chief_complaint']}</div>
+            <div><strong>科室：</strong>{entry['department']}</div>
             <div><strong>现病史：</strong>{entry['history']}</div>
             <div><strong>耗时：</strong>{entry['elapsed_time']}</div>
         </li>
@@ -214,12 +216,20 @@ with gr.Blocks(css=css_content, theme=gr.themes.Base()) as demo:
         # 输入框
         with gr.Column(elem_classes="card"):
             with gr.Row():
-                with gr.Column(scale=4):
+                with gr.Column(scale=3):
                     chief_complaint = gr.Textbox(
                         label="输入主诉",
                         placeholder="例如：发热3天，咳嗽伴痰多",
                         lines=3,
                         elem_id="chief-complaint"
+                    )
+                with gr.Column(scale=1):
+                    department = gr.Dropdown(
+                        choices=["儿科", "内科", "外科", "妇科", "眼科", "耳鼻喉科", "皮肤科", 
+                                "神经内科", "心血管内科", "呼吸内科", "消化内科", "骨科", "泌尿外科",
+                                "肾内科", "风湿免疫科", "肝胆外科", "乳腺外科", "肛肠科", "口腔科"],
+                        label="科室（可选）",
+                        value=""
                     )
                 with gr.Column(scale=1, min_width=120):
                     generate_btn = gr.Button("生成现病史", variant="primary")
@@ -282,7 +292,8 @@ with gr.Blocks(css=css_content, theme=gr.themes.Base()) as demo:
             chief_complaint,
             history_state,
             temperature,
-            top_p
+            top_p,
+            department
         ],
         outputs=[history_output, history_state]
     )
