@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 import torch
 import json
 import numpy as np
+from config import system_prompt
 
 
 class TemplateDataset(Dataset):
@@ -27,7 +28,7 @@ class TemplateDataset(Dataset):
 
     def preprocess(self, chief_complaint, template, department):
         messages = [
-            {"role": "system", "content": f"根据医生提供的主诉和科室信息生成患者的现病史。科室：{department}"},
+            {"role": "system", "content": f"科室：{department}" + system_prompt.content},
             {"role": "user", "content": chief_complaint}
         ]
         prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)

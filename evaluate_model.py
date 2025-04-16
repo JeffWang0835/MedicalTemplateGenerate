@@ -9,6 +9,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig a
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from rouge_chinese import Rouge
 from peft import PeftModel
+from config import system_prompt
 
 # 添加项目根目录到路径
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -45,7 +46,7 @@ def load_model_and_tokenizer(use_lora=False):
 def generate_template(model, tokenizer, chief_complaint, department):
     # 构建输入提示
     messages = [
-        {"role": "system", "content": f"根据医生提供的主诉和科室信息生成患者的现病史。科室：{department}"},
+        {"role": "system", "content": f"科室：{department}" + system_prompt.content},
         {"role": "user", "content": chief_complaint}
     ]
     prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
