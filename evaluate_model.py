@@ -10,6 +10,7 @@ from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from rouge_chinese import Rouge
 from peft import PeftModel
 from config import system_prompt
+import jieba
 
 # 添加项目根目录到路径
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -91,31 +92,33 @@ def generate_template(model, tokenizer, chief_complaint, department):
     return generated_text
 
 def compute_metrics(predictions, references):
-    # 计算BLEU分数
-    smoother = SmoothingFunction().method1
-    
-    # 将文本分词为字符级别的列表(适用于中文)
-    tokenized_predictions = [[list(pred)] for pred in predictions]
-    tokenized_references = [list(ref) for ref in references]
-    
-    # 修改为BLEU-4评分
-    bleu_score = corpus_bleu(
-        [[r] for r in tokenized_references], 
-        [p[0] for p in tokenized_predictions],
-        smoothing_function=smoother
-    )
-    
+    # 1. 处理ROUGE的分词（词语级别）
+    tokenized_preds_rouge = [" ".join(jieba.cut(pred)) for pred in predictions]
+    tokenized_refs_rouge = [" ".join(jieba.cut(ref)) for ref in references]
+
+    # 2. 处理BLEU的分词（字符级别）
+    tokenized_predictions_bleu = [[list(pred)] for pred in predictions]
+    tokenized_references_bleu = [list(ref) for ref in references]
+
     # 计算ROUGE分数
     rouge = Rouge()
-    rouge_scores = rouge.get_scores(predictions, references, avg=True)
-    
+    rouge_scores = rouge.get_scores(tokenized_preds_rouge, tokenized_refs_rouge, avg=True)
+
+    # 计算BLEU分数
+    smoother = SmoothingFunction().method1
+    bleu_score = corpus_bleu(
+        [[r] for r in tokenized_references_bleu],  # 这里使用BLEU专用的分词结果
+        [p[0] for p in tokenized_predictions_bleu],
+        smoothing_function=smoother
+    )
+
     metrics = {
-        "bleu": bleu_score * 100,  # 转换为百分比
+        "bleu": bleu_score * 100,
         "rouge-1": rouge_scores["rouge-1"]["f"] * 100,
         "rouge-2": rouge_scores["rouge-2"]["f"] * 100,
         "rouge-l": rouge_scores["rouge-l"]["f"] * 100
     }
-    
+
     return metrics
 
 def evaluate():

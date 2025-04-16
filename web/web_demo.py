@@ -89,9 +89,12 @@ def generate_history(chief_complaint, history_state, temperature, top_p, departm
     # 记录开始时间
     start_time = datetime.now()
 
+    # 处理科室信息，确保为空时也能正常处理
+    department_text = department.strip() if department else ""
+    
     # 生成现病史
     messages = [
-        {"role": "system", "content": system_prompt.content + (f"\n科室：{department}" if department else "")},
+        {"role": "system", "content": system_prompt.content + (f"\n科室：{department_text}" if department_text else "")},
         {"role": "user", "content": chief_complaint}
     ]
 
@@ -136,7 +139,7 @@ def generate_history(chief_complaint, history_state, temperature, top_p, departm
     new_entry = {
         "timestamp": timestamp,
         "chief_complaint": chief_complaint,
-        "department": department,
+        "department": department_text,
         "history": response,
         "elapsed_time": f"{elapsed_time:.2f}秒"
     }
@@ -188,11 +191,14 @@ def format_history(history):
 
     html = "<h3>历史记录：</h3><ul>"
     for entry in history:
+        # 处理科室为空的情况
+        department_display = entry['department'] if entry['department'] else "无"
+        
         html += f"""
         <li style='margin-bottom: 15px; border-bottom: 1px solid #eee'>
             <div><strong>时间：</strong>{entry['timestamp']}</div>
             <div><strong>主诉：</strong>{entry['chief_complaint']}</div>
-            <div><strong>科室：</strong>{entry['department']}</div>
+            <div><strong>科室：</strong>{department_display}</div>
             <div><strong>现病史：</strong>{entry['history']}</div>
             <div><strong>耗时：</strong>{entry['elapsed_time']}</div>
         </li>
@@ -229,7 +235,9 @@ with gr.Blocks(css=css_content, theme=gr.themes.Base()) as demo:
                                 "神经内科", "心血管内科", "呼吸内科", "消化内科", "骨科", "泌尿外科",
                                 "肾内科", "风湿免疫科", "肝胆外科", "乳腺外科", "肛肠科", "口腔科"],
                         label="科室（可选）",
-                        value=""
+                        value="",
+                        allow_custom_value=False,
+                        placeholder="请选择科室（可不选）"
                     )
                 with gr.Column(scale=1, min_width=120):
                     generate_btn = gr.Button("生成现病史", variant="primary")
@@ -253,13 +261,13 @@ with gr.Blocks(css=css_content, theme=gr.themes.Base()) as demo:
                 with gr.Row():
                     with gr.Column(scale=1):
                         temperature = gr.Slider(
-                            minimum=0.1, maximum=1.0, value=0.7, step=0.05,
+                            minimum=0.1, maximum=1.0, value=0.5, step=0.05,
                             label="Temperature（随机性）",
                             info="值越高，生成内容越随机"
                         )
                     with gr.Column(scale=1):
                         top_p = gr.Slider(
-                            minimum=0.1, maximum=1.0, value=0.9, step=0.05,
+                            minimum=0.1, maximum=1.0, value=0.7, step=0.05,
                             label="Top-p（概率截断）",
                             info="值越低，生成内容越保守"
                         )
