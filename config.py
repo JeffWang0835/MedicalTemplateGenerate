@@ -97,8 +97,8 @@ class SystemPrompt:
 class GenerationConfig:
     """生成相关配置"""
     max_new_tokens: int = 258
-    temperature: float = 0.7
-    top_p: float = 0.9
+    temperature: float = 0.5
+    top_p: float = 0.7
     repetition_penalty: float = 1.1
 
 # 创建默认配置实例

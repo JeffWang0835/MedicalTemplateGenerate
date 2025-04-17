@@ -92,11 +92,11 @@ def generate_template(model, tokenizer, chief_complaint, department):
     return generated_text
 
 def compute_metrics(predictions, references):
-    # 1. 处理ROUGE的分词（词语级别）
+    # ROUGE
     tokenized_preds_rouge = [" ".join(jieba.cut(pred)) for pred in predictions]
     tokenized_refs_rouge = [" ".join(jieba.cut(ref)) for ref in references]
 
-    # 2. 处理BLEU的分词（字符级别）
+    # BLEU
     tokenized_predictions_bleu = [[list(pred)] for pred in predictions]
     tokenized_references_bleu = [list(ref) for ref in references]
 
