@@ -7,7 +7,7 @@
 *   基于主诉自动生成结构化的现病史。
 *   支持使用 LoRA 微调的模型或原始预训练模型进行推理。
 *   提供 Gradio Web 界面进行交互式演示和测试。
-*   提供 FastAPI 构建的 API 接口，方便集成。
+*   提供 Flask API 构建的 API 接口，方便集成。
 *   支持模型训练、参数配置和历史记录导出。
 
 ## 🚀 快速开始
@@ -53,21 +53,6 @@ git clone https://huggingface.co/Qwen/Qwen2.5-7B-Instruct
 ```bash
 # 假设模型下载在当前目录
 mv Qwen2.5-7B-Instruct ./model/
-```
-
-*最终目录结构应类似:*
-```
-your-repository-directory/
-├── model/
-│   └── Qwen2.5-7B-Instruct/
-│       ├── ... (模型文件)
-├── data/
-├── web/
-├── api/
-├── config.py
-├── train_template.py
-├── requirements.txt
-└── README.md
 ```
 
 ### 2. 配置
@@ -165,6 +150,10 @@ your-repository-directory/
 ├── model/                # 存放预训练基础模型
 │   └── Qwen2.5-7B-Instruct/ # 下载的模型文件夹
 ├── output/               # 输出目录 LoRA 适配器权重
+├── eval/                 # 测试代码
+│   ├── evaluate_model.py       # 评估原始模型和微调后模型，打印相关指标
+│   ├── calculate_metrics.py    # 对每一句单独计算指标，生成txt文件
+│   └── generate_excel.py       # 根据txt文件生成excel文件
 ├── lora_output/     	  # 合并后的模型 (如果运行了 merge.py)
 ├── web/                  # Gradio Web 界面代码
 │   ├── web_demo.py       # 主要 Web 应用 (加载模型)
